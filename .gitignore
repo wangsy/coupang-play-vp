@@ -11,3 +11,5 @@ xcuserdata/
 Config/Local.xcconfig
 # Per-Mac notes
 CLAUDE.local.md
+# Logs and snapshots pulled from the device (scripts/device-pull.sh) — may show account pages
+device-logs/

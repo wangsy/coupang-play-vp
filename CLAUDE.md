@@ -79,6 +79,35 @@ xcodebuild -project CoupangPlayVP.xcodeproj -scheme CoupangPlayVP \
 xcodebuild -project CoupangPlayVP.xcodeproj -scheme CoupangPlayVP \
   -destination 'generic/platform=visionOS' -derivedDataPath build -allowProvisioningUpdates build
 
+# 단위 테스트(A2 위장 값·A3 이동 정책). 정상: "Test run with 5 tests in 2 suites passed" + "** TEST SUCCEEDED **" (2026-11-13)
+# 실제 사이트 E2E(SiteE2ETests)는 건너뛴다.
+xcodebuild test -project CoupangPlayVP.xcodeproj -scheme CoupangPlayVP \
+  -destination 'platform=visionOS Simulator,name=Apple Vision Pro' -derivedDataPath build
+
+# 실제 사이트 E2E(네트워크, 로그인하지 않음): 첫 화면이 Mac으로 보이는지, "시작하기"가 웹 로그인(/oauth2/login)으로 가는지.
+# 정상: "CTA candidates: [{"tag":"A","text":"시작하기","href":"/oauth2/login?…"…" + "Test run with 2 tests in 1 suite passed"
+TEST_RUNNER_CPVP_E2E=1 xcodebuild test -project CoupangPlayVP.xcodeproj -scheme CoupangPlayVP \
+  -destination 'platform=visionOS Simulator,name=Apple Vision Pro' -derivedDataPath build -only-testing:CoupangPlayVPTests/SiteE2ETests
+
+# 시뮬레이터에서 앱 실행 + 스크린숏. Debug 빌드는 -startURL <url>로 시작 주소를 바꾼다. 스크린숏은 스크래치에(커밋 안 함).
+# 이동 기록: 앱 로그(subsystem coupangplay-vp)에 start / commit / finish / blocked 줄이 남는다.
+xcrun simctl boot "Apple Vision Pro"; xcrun simctl install booted build/Build/Products/Debug-xrsimulator/CoupangPlayVP.app
+xcrun simctl launch booted <bundle id> [-startURL https://…]
+xcrun simctl io booted screenshot <스크래치>/shot.png
+xcrun simctl spawn booted log show --last 2m --predicate 'subsystem == "coupangplay-vp"' --style compact
+
+# 실기기 동작 추적(spec S9). 빌드·설치·실행하고 앱의 이벤트 로그를 실시간으로 받는다(stdout). 에이전트는 run_in_background로 돌리고
+# 출력 파일을 Monitor(tail -f | grep)로 본다. 정상 첫 줄: "[app] launch 0.1.0 (1) visionOS … Apple Vision Pro", 이어 "[nav] response main 200 …"
+scripts/device-run.sh [--no-build] [-startURL https://…]
+# 기기에 쌓인 로그·스크린숏(Documents/logs/<실행 시각>/events.log, snap-NNN-<이유>.jpg)을 device-logs/로 가져온다(git 제외).
+scripts/device-pull.sh
+
+# 실기기(페어링된 Vision Pro): 빌드 → 설치 → 실행(수동). 정상: "Launched application with <bundle id> bundle identifier."
+xcrun devicectl list devices                         # Reality가 physical, State가 connected인 줄의 UDID
+xcodebuild -project CoupangPlayVP.xcodeproj -scheme CoupangPlayVP -destination "id=<UDID>" -derivedDataPath build -allowProvisioningUpdates build
+xcrun devicectl device install app --device <UDID> build/Build/Products/Debug-xros/CoupangPlayVP.app
+xcrun devicectl device process launch --device <UDID> <bundle id>
+
 # 로컬 설정 확인. Local.xcconfig가 있으면 본인 값, 없으면 DEVELOPMENT_TEAM 빈 값 + com.example.coupangplay-vp
 xcodebuild -project CoupangPlayVP.xcodeproj -scheme CoupangPlayVP -showBuildSettings | grep -E " (PRODUCT_BUNDLE_IDENTIFIER|DEVELOPMENT_TEAM) "
 ```
@@ -89,6 +118,9 @@ xcodebuild -project CoupangPlayVP.xcodeproj -scheme CoupangPlayVP -showBuildSett
 |---|---|
 | `project.yml` | XcodeGen 프로젝트 정의(visionOS 27.0, Swift 6). `CoupangPlayVP.xcodeproj`는 커밋하지 않는다 |
 | `App/` | SwiftUI visionOS 앱 소스. `Info.plist`는 XcodeGen이 `project.yml`의 `info`로 만든다 |
+| `App/Browser/` | 웹 화면: `SiteConfig`(URL·UA·막을 호스트), `NavigationPolicy`(앱 유도 이동 판정, 순수 함수), `WebViewFactory`(설정·위장 스크립트), `BrowserModel`(delegate) |
+| `App/Resources/mac-disguise.js` | 문서 시작 시 모든 프레임에서 터치 표시를 숨기고 Mac처럼 보이게 하는 스크립트 |
+| `Tests/CoupangPlayVPTests/` | swift-testing 단위 테스트(앱 호스트). `SiteE2ETests`는 `CPVP_E2E=1`일 때만 |
 | `Config/Base.xcconfig` | 공통 설정. `Local.xcconfig`를 `#include?`로 읽어 Team ID·번들 ID 접두어를 덮어쓴다 |
 | `Config/Local.xcconfig.example` | 소스를 받은 사람이 복사해 쓰는 예시. 실제 `Local.xcconfig`는 git-ignore |
 | `intent/` | 기능별 intent·spec·plan |

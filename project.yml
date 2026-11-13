@@ -19,6 +19,10 @@ targets:
     platform: visionOS
     sources:
       - path: App
+        excludes:
+          - Resources
+      - path: App/Resources
+        buildPhase: resources
     configFiles:
       Debug: Config/Base.xcconfig
       Release: Config/Base.xcconfig
@@ -26,5 +30,33 @@ targets:
       path: App/Info.plist
       properties:
         CFBundleDisplayName: 쿠팡플레이 VP
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: true
+  CoupangPlayVPTests:
+    type: bundle.unit-test
+    platform: visionOS
+    sources:
+      - path: Tests/CoupangPlayVPTests
+    dependencies:
+      - target: CoupangPlayVP
+    configFiles:
+      Debug: Config/Base.xcconfig
+      Release: Config/Base.xcconfig
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(BUNDLE_ID_PREFIX).coupangplay-vp.tests
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  CoupangPlayVP:
+    build:
+      targets:
+        CoupangPlayVP: all
+        CoupangPlayVPTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - CoupangPlayVPTests
