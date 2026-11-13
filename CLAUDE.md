@@ -79,7 +79,8 @@ xcodebuild -project CoupangPlayVP.xcodeproj -scheme CoupangPlayVP \
 xcodebuild -project CoupangPlayVP.xcodeproj -scheme CoupangPlayVP \
   -destination 'generic/platform=visionOS' -derivedDataPath build -allowProvisioningUpdates build
 
-# 단위 테스트(A2 위장 값·A3 이동 정책). 정상: "Test run with 5 tests in 2 suites passed" + "** TEST SUCCEEDED **" (2026-11-13)
+# 단위 테스트(위장 값·이동 정책·UA 선택·로그 가리기·페이지 이벤트·전체화면 흉내).
+# 정상: "Test run with 17 tests in 7 suites passed" + "** TEST SUCCEEDED **" (2026-11-13 시네마 모드 뒤)
 # 실제 사이트 E2E(SiteE2ETests)는 건너뛴다.
 xcodebuild test -project CoupangPlayVP.xcodeproj -scheme CoupangPlayVP \
   -destination 'platform=visionOS Simulator,name=Apple Vision Pro' -derivedDataPath build
@@ -119,6 +120,11 @@ xcodebuild -project CoupangPlayVP.xcodeproj -scheme CoupangPlayVP -showBuildSett
 | `project.yml` | XcodeGen 프로젝트 정의(visionOS 27.0, Swift 6). `CoupangPlayVP.xcodeproj`는 커밋하지 않는다 |
 | `App/` | SwiftUI visionOS 앱 소스. `Info.plist`는 XcodeGen이 `project.yml`의 `info`로 만든다 |
 | `App/Browser/` | 웹 화면: `SiteConfig`(URL·UA·막을 호스트), `NavigationPolicy`(앱 유도 이동 판정, 순수 함수), `WebViewFactory`(설정·위장 스크립트), `BrowserModel`(delegate) |
+| `App/Cinema/CinemaSpace.swift` | 시네마 모드 몰입 공간(검은 구). 창 쪽 전환은 `ContentView.setCinema` (intent/261113-cinema-mode) |
+| `App/Resources/fullscreen-shim.js` | 사이트의 전체화면 요청을 페이지 안에서 흉내 → `FullscreenBridge`로 앱에 알림 |
+| `App/Diagnostics/` | 동작 기록: `EventLog`(통합 로그·stdout·파일), `LogRedaction`, `PageEventBridge`, `Snapshotter` |
+| `App/Resources/page-events.js` | 페이지의 모든 동작(클릭·경로·console·영상·DRM·전체화면 …)을 앱에 보고 |
+| `scripts/device-run.sh`, `device-pull.sh` | 실기기 설치·실행·실시간 로그 / 기기 로그·스크린숏 가져오기 |
 | `App/Resources/mac-disguise.js` | 문서 시작 시 모든 프레임에서 터치 표시를 숨기고 Mac처럼 보이게 하는 스크립트 |
 | `Tests/CoupangPlayVPTests/` | swift-testing 단위 테스트(앱 호스트). `SiteE2ETests`는 `CPVP_E2E=1`일 때만 |
 | `Config/Base.xcconfig` | 공통 설정. `Local.xcconfig`를 `#include?`로 읽어 Team ID·번들 ID 접두어를 덮어쓴다 |
@@ -132,3 +138,7 @@ xcodebuild -project CoupangPlayVP.xcodeproj -scheme CoupangPlayVP -showBuildSett
 - **공개 저장소다.** 개발자 Team ID·서명 설정·번들 ID 접두어처럼 사람마다 다른 값은 커밋하지 않는 로컬 파일
   (예: `Config/Local.xcconfig`, `.gitignore`에 등록)에 두고, 저장소에는 예시 파일만 둔다. `CLAUDE.local.md`도 커밋하지 않는다.
 - 문서(intent 등)에 사용자 개인 정보(이메일, 계정, 기기 이름)를 적지 않는다.
+- **WKWebView(`BrowserModel`)를 `App.init`에서 만들지 않는다.** `UIApplicationMain` 전이라 첫 터치에서 UIKit 제스처 처리가 크래시했다
+  (2026-11-13, intent/261113-cinema-mode plan). 장면 내용에서 처음 쓸 때 만든다(`BrowserHolder`).
+- 실기기 실시간 로그는 실행마다 **새 파일**로 받는다(`> 새파일`). 이전 `devicectl --console`이 같은 파일을 쥔 채 끝나면 NUL로 덮어쓴다.
+- 기기 크래시 리포트: `xcrun devicectl device copy from --device <UDID> --domain-type systemCrashLogs --source / --destination <스크래치>` → `CoupangPlayVP-*.ips`.

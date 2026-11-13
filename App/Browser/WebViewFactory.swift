@@ -7,6 +7,8 @@ enum WebViewFactory {
     static let disguiseScriptSource = bundledScript("mac-disguise")
     /// `page-events.js` from the app bundle.
     static let pageEventsScriptSource = bundledScript("page-events")
+    /// `fullscreen-shim.js` from the app bundle (cinema spec C1).
+    static let fullscreenShimSource = bundledScript("fullscreen-shim")
 
     private static func bundledScript(_ name: String) -> String {
         guard let url = Bundle.main.url(forResource: name, withExtension: "js"),
@@ -16,10 +18,13 @@ enum WebViewFactory {
         return source
     }
 
-    /// - Parameter eventBridge: receives `page-events.js` messages. `nil` leaves page events unreported.
+    /// - Parameters:
+    ///   - eventBridge: receives `page-events.js` messages. `nil` leaves page events unreported.
+    ///   - fullscreenBridge: receives `fullscreen-shim.js` state. `nil` leaves fullscreen to WebKit.
     static func makeConfiguration(
         dataStore: WKWebsiteDataStore = .default(),
-        eventBridge: PageEventBridge? = nil
+        eventBridge: PageEventBridge? = nil,
+        fullscreenBridge: FullscreenBridge? = nil
     ) -> WKWebViewConfiguration {
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = dataStore // .default() persists cookies → login survives relaunch (S5)
@@ -35,6 +40,10 @@ enum WebViewFactory {
         if let eventBridge {
             controller.add(eventBridge, name: PageEventBridge.name)
             controller.addUserScript(WKUserScript(source: pageEventsScriptSource, injectionTime: .atDocumentStart, forMainFrameOnly: false))
+        }
+        if let fullscreenBridge {
+            controller.add(fullscreenBridge, name: FullscreenBridge.name)
+            controller.addUserScript(WKUserScript(source: fullscreenShimSource, injectionTime: .atDocumentStart, forMainFrameOnly: true))
         }
         return configuration
     }

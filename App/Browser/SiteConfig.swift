@@ -36,6 +36,9 @@ enum SiteConfig {
         return isMacHost(host) ? userAgent : tabletUserAgent
     }
 
+    /// Window size while in cinema mode (cinema decision D2). The system may give less.
+    static let cinemaWindowSize = CGSize(width: 2560, height: 1440)
+
     /// Schemes the web view may navigate to. Anything else (e.g. `coupangplay://`) is an app hand-off (spec S3).
     static let allowedSchemes: Set<String> = ["http", "https", "about", "blob", "data"]
 

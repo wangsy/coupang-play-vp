@@ -38,6 +38,9 @@ final class EventLog: @unchecked Sendable {
         FileManager.default.createFile(atPath: file.path, contents: nil)
         handle = try? FileHandle(forWritingTo: file)
 
+        // The live stream (`devicectl --console`) can go away at any time; writing to a closed pipe must not kill the app.
+        signal(SIGPIPE, SIG_IGN)
+
         timestamp = DateFormatter()
         timestamp.locale = Locale(identifier: "en_US_POSIX")
         timestamp.dateFormat = "HH:mm:ss.SSS"
@@ -52,8 +55,9 @@ final class EventLog: @unchecked Sendable {
             logger.notice("\(text, privacy: .public)")
             let line = "\(timestamp.string(from: now)) [\(category.rawValue)] \(text)\n"
             let data = Data(line.utf8)
-            FileHandle.standardOutput.write(data)
-            handle?.write(data)
+            // write(contentsOf:) throws a Swift error instead of raising an ObjC exception (12:16 device crash).
+            try? FileHandle.standardOutput.write(contentsOf: data)
+            try? handle?.write(contentsOf: data)
         }
     }
 

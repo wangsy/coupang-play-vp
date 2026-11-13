@@ -17,20 +17,30 @@ final class BrowserModel: NSObject {
     private(set) var canGoBack = false
     private(set) var loadError: String?
     private(set) var dialog: WebDialog?
+    /// The page is in (emulated) fullscreen → the app shows cinema mode (cinema spec C2).
+    private(set) var isCinema = false
+    /// Set by `CinemaSpace` while the immersive space is on screen.
+    var cinemaSpaceIsOpen = false
 
     @ObservationIgnored private var observations: [NSKeyValueObservation] = []
     @ObservationIgnored private var dialogAnswer: CheckedContinuation<(ok: Bool, text: String?), Never>?
     @ObservationIgnored private let bridge = PageEventBridge()
+    @ObservationIgnored private let fullscreenBridge = FullscreenBridge()
     @ObservationIgnored private var snapshots: Snapshotter!
     private let log = EventLog.shared
 
     init(startURL: URL) {
-        webView = WebViewFactory.makeWebView(configuration: WebViewFactory.makeConfiguration(eventBridge: bridge))
+        webView = WebViewFactory.makeWebView(configuration: WebViewFactory.makeConfiguration(eventBridge: bridge, fullscreenBridge: fullscreenBridge))
         super.init()
         snapshots = Snapshotter(webView: webView)
         webView.navigationDelegate = self
         webView.uiDelegate = self
         bridge.onEvent = { [weak self] kind, isMainFrame, _ in self?.pageEvent(kind, isMainFrame: isMainFrame) }
+        fullscreenBridge.onChange = { [weak self] on in
+            guard let self, isCinema != on else { return }
+            isCinema = on
+            snapshots.capture(on ? "cinema-enter" : "cinema-exit", after: 1.5)
+        }
 
         // WKWebView reports KVO changes on the main thread. Next.js changes pages with pushState,
         // which no navigation delegate call reports — so watch url/title/canGoBack directly.
@@ -67,6 +77,16 @@ final class BrowserModel: NSObject {
         log.log(.ui, "tap home")
         loadError = nil
         webView.load(URLRequest(url: SiteConfig.home))
+    }
+
+    // MARK: Cinema (cinema spec C2)
+
+    /// The system closed the cinema space (e.g. Digital Crown) — end the page's fullscreen too.
+    func exitCinemaFromSystem() {
+        guard isCinema else { return }
+        log.log(.media, "cinema closed by system → exit page fullscreen")
+        isCinema = false
+        webView.evaluateJavaScript("window.__cpvpExitFullscreen && window.__cpvpExitFullscreen()", completionHandler: nil)
     }
 
     // MARK: Dialogs
@@ -154,6 +174,7 @@ extension BrowserModel: WKNavigationDelegate {
 
     func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
         log.log(.nav, "commit \(webView.url?.absoluteString ?? "-")")
+        if isCinema { isCinema = false } // a new document is never in fullscreen
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
