@@ -44,3 +44,26 @@ spec: `spec.md` · 결정: `decisions.md`
 - 12:38 KST(기기 로그 `261113-123757`) **D2** — 전체화면 중 일시정지 클릭 → `pause`, 다시 → `play`. **D4** — 크라운으로 몰입 종료 →
   `cinema space disappeared` → `cinema closed by system → exit page fullscreen` → `fullscreenchange`(null) → 창 1280x800 복원. 사용자: "다 잘 된다".
   D1–D4 통과. 크래시 없음.
+- 14:2x KST 사용자 보고: 전체화면 중 창 아래 **창 닫기**를 누르면 검은 몰입 공간만 남고 컨트롤이 없어 크라운으로만 나올 수 있다.
+  원인: 창이 닫혀도 몰입 공간은 그대로 열려 있음. 수정(spec C2, 결정 D4): 창의 `onDisappear` → `browserWindowIsOpen = false` →
+  `CinemaSpace`가 몰입 공간을 닫는다 → 남는 장면이 없어 앱이 끝난다(페이지 전체화면은 `exitCinemaFromSystem`으로 끝).
+  창 닫기·몰입 공간은 단위 테스트로 잡을 수 없어 재현 절차로 대신한다: 재생 → 전체화면 → 창 닫기 → 검은 화면이 남지 않고 방이 보여야 함,
+  로그 `[ui] window closed (cinema on, space open)` → `[media] window closed during cinema → close cinema space` → `cinema space disappeared`.
+  14:21 KST(로그) 시뮬레이터 "17 tests in 7 suites passed". 사용자 **D5** 기기 확인 대기.
+- 14:32 KST(기기 로그 `device-1421`) D5 1회차 실패: 창 닫기 → `scene inactive` → `scene background`(14:32:18)만 오고 `onDisappear`는 안 옴 →
+  몰입 공간이 남음(14:32:25 크라운으로 닫힘). 창 닫기는 창 장면을 background로 보낼 뿐이다 → 판정을 `scenePhase == .background`로 바꿈(결정 D4 갱신).
+- 14:33 KST(로그) 시뮬레이터 "17 tests in 7 suites passed". 14:33:51 기기 설치·실행.
+- 14:34 KST(기기 로그 `device-1434`) D5 2회차: 전체화면(14:34:03) → 창 닫기 → `scene background` → `window closed (cinema on, space open)` →
+  `window closed during cinema → close cinema space` → `cinema space disappeared`(14:34:09) → 페이지 전체화면 끝. 사용자 체감 확인 대기.
+- 사용자: "전체화면에서 바로 앱 종료는 이상하다. 전체화면 종료로 해 달라" → 창 닫기 = 창 다시 열기 + 몰입 공간 닫기(결정 D4 갱신, spec C2·D5 갱신).
+  창 닫힘 신호를 Bool에서 카운터로 바꿈.
+- 14:36 KST(로그) 시뮬레이터 "17 tests in 7 suites passed". 기기 설치·실행.
+- 14:36:47–54 KST(기기 로그 `device-1436`) D5 3회차: 전체화면 → 창 닫기 → `scene background` → `window closed (cinema on, space open)` →
+  `reopen window, close cinema space` → `scene active`·`window 1280x800`(0.12초 뒤) → `cinema space disappeared` → `cinema page exit` → `cinema exit`.
+  사용자 체감 확인 대기.
+- 14:36:57 KST(같은 로그) 다시 전체화면 → `cinema enter` 2번·`cinema space open: error` 1번(앞의 `cinema exit`도 2번). 다시 연 창 + background에 남은 옛 창,
+  두 `ContentView`가 모두 `isCinema`에 반응. 옛 창의 기억 크기(2560x1360)로 복원될 위험 → background 창의 `setCinema`는 건너뜀.
+- 14:37:14 KST(같은 로그) 위험이 실제로 남: 창 닫기 → 전체화면 끝 → `window 1280x800` 뒤 `window 2560x1360`(옛 창이 기억 크기로 되돌림).
+  14:38 KST(로그) background 건너뛰기 수정 후 시뮬레이터 "17 tests in 7 suites passed".
+- 14:38:31 KST(기기 로그 `device-1439`) 수정본 설치·실행: 시작 시 `scene active` 2번·창 2개 크기 로그 — 이전 실행에서 생긴 창 2개를 시스템이 되살린 것으로 보임.
+  사용자가 둘 다 닫음(14:38:38·39). **열린 문제**: 다시 연 창이 옛 창을 대신하지 않고 하나 더 생겨 남는지. D5(반복 2회 — 처리 1번, 창 1280x800 복원) 기기 확인 대기.

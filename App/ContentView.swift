@@ -68,6 +68,9 @@ struct ContentView: View {
             }
             .onChange(of: scenePhase, initial: true) { _, phase in
                 EventLog.shared.log(.app, "scene \(phase)")
+                // visionOS: the window's close button only sends its scene to the background — the view does not
+                // disappear (2026-11-13 device log). Treat background as "window closed" (decision D4).
+                if phase == .background { model.browserWindowClosed() }
             }
             .onGeometryChange(for: CGSize.self, of: { $0.size }) { size in
                 windowSize = size
@@ -82,6 +85,13 @@ struct ContentView: View {
 
     private func setCinema(_ on: Bool) async {
         let log = EventLog.shared
+        // After a close during cinema the window is reopened (decision D4) and the closed one may linger in the
+        // background with this same view; only the window on screen drives cinema (2026-11-13 device log: enter ×2).
+        guard scenePhase != .background else {
+            log.log(.media, "cinema \(on ? "enter" : "exit"): skipped in background window")
+            sizeBeforeCinema = nil
+            return
+        }
         if on {
             sizeBeforeCinema = windowSize
             log.log(.media, "cinema enter: window \(Int(windowSize.width))x\(Int(windowSize.height)) → request \(Int(SiteConfig.cinemaWindowSize.width))x\(Int(SiteConfig.cinemaWindowSize.height))")

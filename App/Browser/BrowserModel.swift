@@ -21,6 +21,10 @@ final class BrowserModel: NSObject {
     private(set) var isCinema = false
     /// Set by `CinemaSpace` while the immersive space is on screen.
     var cinemaSpaceIsOpen = false
+    /// Counts "the user closed the browser window during cinema" (`ContentView`). `CinemaSpace` reacts by reopening
+    /// the window and closing itself — fullscreen ends instead of leaving only the black room (cinema spec C2, decision D4).
+    /// A counter, not a Bool: a late signal from the old window must not leave a stale "closed" state behind.
+    private(set) var windowClosedDuringCinema = 0
 
     @ObservationIgnored private var observations: [NSKeyValueObservation] = []
     @ObservationIgnored private var dialogAnswer: CheckedContinuation<(ok: Bool, text: String?), Never>?
@@ -80,6 +84,13 @@ final class BrowserModel: NSObject {
     }
 
     // MARK: Cinema (cinema spec C2)
+
+    /// The browser window went to the background (its close button). Only matters while in cinema.
+    func browserWindowClosed() {
+        log.log(.ui, "window closed (cinema \(isCinema ? "on" : "off"), space \(cinemaSpaceIsOpen ? "open" : "closed"))")
+        guard isCinema, cinemaSpaceIsOpen else { return }
+        windowClosedDuringCinema += 1
+    }
 
     /// The system closed the cinema space (e.g. Digital Crown) — end the page's fullscreen too.
     func exitCinemaFromSystem() {

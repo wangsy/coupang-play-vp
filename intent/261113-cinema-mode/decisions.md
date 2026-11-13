@@ -20,3 +20,13 @@
 - 버린 대안: `isElementFullscreenEnabled = false` — 사이트가 전체화면 버튼을 숨기거나 영상만의 기본 전체화면으로 가 사이트 컨트롤을 잃을 수 있다.
 - 남는 것: 사이트 CSS의 `:fullscreen` 규칙은 적용되지 않는다(spec E1).
 - 바꾸는 법: `WebViewFactory`에서 `fullscreen-shim.js`를 빼면 WebKit 전체화면으로 돌아간다.
+
+## D4. 시네마 중 창을 닫으면 전체화면을 끝낸다 (사용자 결정)
+- 결정: 창의 장면이 background가 되면(`ContentView`의 `scenePhase` → `model.browserWindowClosed()`, 시네마 중일 때만) `CinemaSpace`가
+  창을 다시 열고(`openWindow(id: "browser")`) 몰입 공간을 닫는다. 몰입 공간이 닫히며 기존 경로(`exitCinemaFromSystem`)로 페이지 전체화면도 끝난다.
+  visionOS에서 창 닫기 버튼은 뷰를 없애지 않고 창 장면을 background로만 보낸다(기기 로그 2026-11-13 14:32:18 — `onDisappear` 안 옴).
+- 경과: 처음에는 에이전트가 "앱 종료"로 정해 구현·기기 확인(14:34)했으나, 사용자가 "전체화면에서 바로 앱 종료는 이상하다. 전체화면 종료로 해 달라"고 바꿨다.
+- 신호는 Bool이 아니라 카운터(`windowClosedDuringCinema`) — 다시 연 창과 옛 창의 신호가 엇갈려도 "닫힘" 상태가 남지 않는다.
+- 남는 것: 헤드셋을 벗는 등 앱 전체가 background가 될 때도 같은 경로를 탈 수 있다(돌아오면 보통 창).
+- 버린 대안: 몰입 공간을 닫아 앱 종료 — 사용자가 이상하다고 함. 몰입 공간에 "나가기" 버튼 — 한 번 더 눌러야 한다.
+- 바꾸는 법: `CinemaSpace`의 `onChange(of: model.windowClosedDuringCinema)`. `openWindow`를 빼면 앱 종료로 돌아간다.
