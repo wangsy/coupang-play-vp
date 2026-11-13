@@ -1,0 +1,13 @@
+.DS_Store
+# XcodeGen output (xcodegen generate)
+*.xcodeproj/
+# Xcode / SwiftPM build products
+.build/
+.swiftpm/
+DerivedData/
+/build/
+xcuserdata/
+# Per-developer values (Team ID, bundle id prefix) — copy Config/Local.xcconfig.example
+Config/Local.xcconfig
+# Per-Mac notes
+CLAUDE.local.md

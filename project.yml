@@ -1,0 +1,30 @@
+# XcodeGen spec. `xcodegen generate` writes CoupangPlayVP.xcodeproj (not committed).
+name: CoupangPlayVP
+options:
+  deploymentTarget:
+    visionOS: "27.0"
+  createIntermediateGroups: true
+  developmentLanguage: ko
+settings:
+  base:
+    CODE_SIGN_STYLE: Automatic
+    SWIFT_VERSION: "6.0"
+    SWIFT_APPROACHABLE_CONCURRENCY: YES
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+targets:
+  CoupangPlayVP:
+    type: application
+    platform: visionOS
+    sources:
+      - path: App
+    configFiles:
+      Debug: Config/Base.xcconfig
+      Release: Config/Base.xcconfig
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: 쿠팡플레이 VP
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: true
