@@ -28,7 +28,8 @@ Vision Pro Safari는 기본으로 Mac UA(`Macintosh; Intel Mac OS X 10_15_7`)를
   `https://coupangplay.app.link/…`(Branch 딥링크 → App Store)로 보낸다.
 - 다른 길: `coupangplay://` 스킴으로 `location.replace` 한 뒤 5초 뒤 `https://apps.apple.com/kr/app/…/id1536885649`로 보낸다.
 - 모바일 전용 경로: `/mobile`, `/mobile-install`, `/webview/mobile`.
-- 웹 로그인 경로: `/login`, `/login/coupang`, `/login/callback`, 쿠팡 로그인 `…/login/login.pang?rtnUrl=…`(다른 도메인) — intent Q4에 따라 이 페이지들도 Mac으로 보여야 한다.
+- 웹 로그인 경로: `/login`, `/login/coupang`, `/login/callback`, 쿠팡 로그인 `…/login/login.pang?rtnUrl=…`(다른 도메인) — ~~intent Q4에 따라 이 페이지들도 Mac으로 보여야 한다.~~
+  → R5로 바뀜: 쿠팡플레이 경로만 Mac으로 보이고, 쿠팡 로그인(다른 도메인)은 iPad로 보인다.
 
 ## R4. 재생과 DRM
 
