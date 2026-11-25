@@ -57,10 +57,13 @@ spec: `spec.md`, 결정: `decisions.md` (사용자 "한 번에 구현", 2026-11-
   미리보기는 1920x1080이었다. D8(4K 배지 작품) 사용자 확인 대기.
 - 사용자: 4K 헤더를 붙여도 "계속 1080p"다 → 재생 응답·HLS 목록 관찰 코드(`play-response`·`variants`)를 넣고 테스트를 더했다.
   21:47 KST(`date`) 시뮬레이터 "35 tests in 10 suites passed".
-  - `scripts/device-run.sh -startURL …`이 실패했다(21:53, devicectl: "'https://…' is invalid for '-t <seconds>'").
+  - `scripts/device-run.sh -startURL …`이 실패했다(21:53, devicectl: `'https://…' is invalid for '-t <seconds>'`).
     devicectl이 앱 인자를 자기 옵션으로 읽은 것이다 → 앱 인자 앞에 `--`를 넣었다(첫 intent 때부터 있던 버그).
   - 21:53:29 KST(기기 로그 `device-2154`) 4K 배지 영화로 바로 열었다.
     재생 응답 `features[0]`: `resolution supported=true enabled=false required=[prime, device]`. 영상은 avc1 SDR만 왔다.
     21:54:02 HLS 목록 최고는 1920x1080 H.264였고 4K 항목은 없었다 → **D8 실패.** 사용자 확인: 계정이 Prime이 아니다.
   - `SiteConfig.requestUHD = false`로 실험을 껐다. 21:57 KST(`date`) 시뮬레이터 "35 tests in 10 suites passed".
     21:57:45 KST(기기 로그 `device-2158`) 재생 요청에 `x-support-hevc`만 있고 `x-support-uhd`는 없다(사이트 원래대로).
+- 사용자 요청: "영상 해상도 표시는 컨트롤이 보이는 동안은 항상 보이도록" → `infoOn`을 멈춤 조건 없이 바꿨다(spec P6·D7, 결정 DC10 갱신).
+  테스트 `resolutionHiddenWhilePlaying`을 `resolutionShowsWhilePlayingToo`로 바꿨다.
+  22:17 KST(`date`) 시뮬레이터 "35 tests in 10 suites passed". 22:18:13 KST(기기 로그 `device-2218`) 실기기 설치·실행. D7 사용자 확인 대기.

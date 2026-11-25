@@ -177,10 +177,10 @@
     setPart("fullscreen", fullscreen ? "exit" : "enter", fullscreen ? "전체화면 끝내기" : "전체화면");
     setPart("next", "next", "다음화", !!find(page, SITE.next));
 
-    // Resolution, only while paused (intent addition 2026-11-25).
+    // Resolution, whenever the controls are on screen — playing or paused (spec P6, decision DC10).
     const size = video ? resolution(video.videoWidth, video.videoHeight) : "";
     if (info.textContent !== size) info.textContent = size;
-    const infoOn = paused && size ? "1" : "0";
+    const infoOn = size ? "1" : "0";
     if (info.dataset.on !== infoOn) info.dataset.on = infoOn;
 
     const why = reasons();

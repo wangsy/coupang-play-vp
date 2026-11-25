@@ -166,12 +166,16 @@ struct CenterControlsTests {
         #expect(await eventually { await info(webView) == "1|\(size.2)" })
     }
 
-    @Test func resolutionHiddenWhilePlaying() async throws {
+    /// Changed 2026-11-25 (decision DC10): the resolution shows whenever the controls do, also while playing.
+    @Test func resolutionShowsWhilePlayingToo() async throws {
         let (webView, _) = try await loaded()
+        #expect(await eventually { await info(webView) == "0|" }) // size unknown → no line
         await fakeSize(1920, 1080, in: webView)
-        #expect(await eventually { await info(webView) == "1|1080p FHD · 1920×1080" })
         _ = await js("Object.defineProperty(document.querySelector('video'), 'paused', { get: () => false, configurable: true }); return 1", in: webView)
-        #expect(await eventually { await info(webView) == "0|1080p FHD · 1920×1080" })
+        _ = await js("document.querySelector('.playpause-toggler').dispatchEvent(new PointerEvent('pointerdown', {bubbles: true})); return 1", in: webView)
+        #expect(await eventually { await visible(webView) == "1" })
+        #expect(await label("playPause", in: webView) == "멈춤")
+        #expect(await info(webView) == "1|1080p FHD · 1920×1080")
     }
 
     @Test func nextIsHiddenWithoutTheSiteButton() async throws {
