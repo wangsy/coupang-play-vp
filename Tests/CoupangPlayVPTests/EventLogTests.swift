@@ -75,6 +75,47 @@ struct PageEventsTests {
         #expect(all.contains("\"text\":\"시작하기\""))
         #expect(!all.contains("hunter2"))
     }
+
+    /// Research R6 (intent 261125): what the site's 4K check would see, and the x-support-* headers it sends.
+    @Test func reportsVideoCapabilitiesAndSupportHeaders() async throws {
+        let (webView, lines) = try await loaded()
+        #expect(await eventually { lines.items.contains { $0.contains("main video-caps") } })
+        let caps = try #require(lines.items.first { $0.contains("main video-caps") })
+        #expect(caps.contains(#""media-source hevc-2160p60":"#) && caps.contains(#""file hevc-2160p60":"#))
+        _ = try await webView.evaluateJavaScript("""
+        const x = new XMLHttpRequest(); x.open('GET', '/api/play?token=secret'); x.setRequestHeader('x-support-uhd', 'true');
+        x.setRequestHeader('x-profileId', 'p1');
+        fetch('data:,x', { headers: { 'x-support-hevc': 'true' } }).catch(() => {}); 1
+        """)
+        #expect(await eventually { lines.items.contains { $0.contains("main play-header") && $0.contains(#""name":"x-support-hevc""#) } })
+        let all = lines.items.joined(separator: "\n")
+        #expect(all.contains(#"main play-header {"name":"x-support-uhd","url":"/api/play","value":"true"}"#))
+        #expect(!all.contains("x-profileId") && !all.contains("secret"))
+    }
+
+    /// Research R6: the stream list of a long video — resolutions, codecs, dynamic range — without its URIs.
+    @Test func reportsStreamVariantsOfLongVideos() async throws {
+        let (webView, lines) = try await loaded()
+        _ = try await webView.evaluateJavaScript("""
+        {
+          const master = ['#EXTM3U',
+            '#EXT-X-SESSION-KEY:METHOD=SAMPLE-AES,URI="skd://k",KEYFORMAT="com.apple.streamingkeydelivery"',
+            '#EXT-X-STREAM-INF:BANDWIDTH=25000000,RESOLUTION=3840x2160,CODECS="hvc1.2.4.L153.B0,mp4a.40.2",VIDEO-RANGE=PQ,FRAME-RATE=23.976',
+            'v4k/index.m3u8?token=secret',
+            '#EXT-X-STREAM-INF:BANDWIDTH=6000000,RESOLUTION=1920x1080,CODECS="avc1.640028,mp4a.40.2",VIDEO-RANGE=SDR',
+            'v1080/index.m3u8'].join('\\n');
+          const v = document.createElement('video'); document.body.appendChild(v);
+          Object.defineProperty(v, 'currentSrc', { get: () => 'data:application/vnd.apple.mpegurl,' + encodeURIComponent(master) });
+          Object.defineProperty(v, 'duration', { get: () => 3600 });
+          v.dispatchEvent(new Event('loadedmetadata'));
+        } 1
+        """)
+        #expect(await eventually { lines.items.contains { $0.contains("main variants") } })
+        let line = try #require(lines.items.first { $0.contains("main variants") })
+        #expect(line.contains("RESOLUTION=3840x2160") && line.contains("VIDEO-RANGE=PQ") && line.contains("RESOLUTION=1920x1080"))
+        #expect(line.contains("com.apple.streamingkeydelivery"))
+        #expect(!line.contains("secret") && !line.contains("v4k/index"))
+    }
 }
 
 @MainActor

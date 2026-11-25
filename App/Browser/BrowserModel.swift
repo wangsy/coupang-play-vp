@@ -34,7 +34,8 @@ final class BrowserModel: NSObject {
     private let log = EventLog.shared
 
     init(startURL: URL) {
-        webView = WebViewFactory.makeWebView(configuration: WebViewFactory.makeConfiguration(eventBridge: bridge, fullscreenBridge: fullscreenBridge))
+        webView = WebViewFactory.makeWebView(configuration: WebViewFactory.makeConfiguration(
+            eventBridge: bridge, fullscreenBridge: fullscreenBridge, centerControls: true, requestUHD: SiteConfig.requestUHD))
         super.init()
         snapshots = Snapshotter(webView: webView)
         webView.navigationDelegate = self
@@ -126,6 +127,8 @@ final class BrowserModel: NSObject {
         case "appear": snapshots.capture("appear", after: 0.8)
         case "js-error" where isMainFrame: snapshots.capture("js-error", after: 0.5)
         case "media", "drm", "fullscreen": snapshots.capture("media", after: 1.0)
+        case "player-outline": snapshots.capture("player", after: 0.1) // what the outline describes (intent 261125)
+        case "player-center": snapshots.capture("center", after: 0.6) // the middle controls as shown (spec P5)
         default: break
         }
     }

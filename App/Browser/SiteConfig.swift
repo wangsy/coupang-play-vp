@@ -36,6 +36,12 @@ enum SiteConfig {
         return isMacHost(host) ? userAgent : tabletUserAgent
     }
 
+    /// EXPERIMENT: add `x-support-uhd: true` to the site's play requests so VOD may come in 4K (`uhd-request.js`,
+    /// intent 261125-cinema-center-controls decision DC12). The site's web player asks for 4K only for live content.
+    /// Off since 2026-11-25: the server still gave only 1080p H.264, because this title's 4K needs "prime" and "device"
+    /// (play response `features`, research R6). Set to `true` to try again (e.g. after the account changes).
+    static let requestUHD = false
+
     /// Window size while in cinema mode (cinema decision D2). The system may give less.
     static let cinemaWindowSize = CGSize(width: 2560, height: 1440)
 

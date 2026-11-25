@@ -79,8 +79,8 @@ xcodebuild -project CoupangPlayVP.xcodeproj -scheme CoupangPlayVP \
 xcodebuild -project CoupangPlayVP.xcodeproj -scheme CoupangPlayVP \
   -destination 'generic/platform=visionOS' -derivedDataPath build -allowProvisioningUpdates build
 
-# 단위 테스트(위장 값·이동 정책·UA 선택·로그 가리기·페이지 이벤트·전체화면 흉내).
-# 정상: "Test run with 17 tests in 7 suites passed" + "** TEST SUCCEEDED **" (2026-11-13 시네마 모드 뒤)
+# 단위 테스트(위장 값·이동 정책·UA 선택·로그 가리기·페이지 이벤트·전체화면 흉내·플레이어 관찰·가운데 컨트롤).
+# 정상: "Test run with 35 tests in 10 suites passed" + "** TEST SUCCEEDED **" (2026-11-25 4K 조사 뒤)
 # 실제 사이트 E2E(SiteE2ETests)는 건너뛴다.
 xcodebuild test -project CoupangPlayVP.xcodeproj -scheme CoupangPlayVP \
   -destination 'platform=visionOS Simulator,name=Apple Vision Pro' -derivedDataPath build
@@ -119,13 +119,15 @@ xcodebuild -project CoupangPlayVP.xcodeproj -scheme CoupangPlayVP -showBuildSett
 |---|---|
 | `project.yml` | XcodeGen 프로젝트 정의(visionOS 27.0, Swift 6). `CoupangPlayVP.xcodeproj`는 커밋하지 않는다 |
 | `App/` | SwiftUI visionOS 앱 소스. `Info.plist`는 XcodeGen이 `project.yml`의 `info`로 만든다 |
-| `App/Browser/` | 웹 화면: `SiteConfig`(URL·UA·막을 호스트), `NavigationPolicy`(앱 유도 이동 판정, 순수 함수), `WebViewFactory`(설정·위장 스크립트), `BrowserModel`(delegate) |
+| `App/Browser/` | 웹 화면: `SiteConfig`(URL·UA·막을 호스트), `NavigationPolicy`(앱 유도 이동 판정, 순수 함수), `WebViewFactory`(설정·주입 스크립트), `BrowserModel`(delegate), `WebView`(`WebViewContainer` — 웹 화면을 창 크기에 맞춤), `FullscreenBridge`(전체화면 흉내 → 모델) |
 | `App/Cinema/CinemaSpace.swift` | 시네마 모드 몰입 공간(검은 구). 창 쪽 전환은 `ContentView.setCinema` (intent/261113-cinema-mode) |
-| `App/Resources/fullscreen-shim.js` | 사이트의 전체화면 요청을 페이지 안에서 흉내 → `FullscreenBridge`로 앱에 알림 |
 | `App/Diagnostics/` | 동작 기록: `EventLog`(통합 로그·stdout·파일), `LogRedaction`, `PageEventBridge`, `Snapshotter` |
-| `App/Resources/page-events.js` | 페이지의 모든 동작(클릭·경로·console·영상·DRM·전체화면 …)을 앱에 보고 |
+| `App/Resources/mac-disguise.js` | 문서 시작 시 모든 프레임에서 터치 표시를 숨기고 Mac처럼 보이게 하는 스크립트(최상위 페이지가 쿠팡플레이일 때만) |
+| `App/Resources/fullscreen-shim.js` | 사이트의 전체화면 요청을 페이지 안에서 흉내 → `FullscreenBridge`로 앱에 알림 |
+| `App/Resources/uhd-request.js` | (실험, 지금 꺼짐) 재생 요청에 `x-support-uhd`를 붙여 VOD도 4K를 요청. `SiteConfig.requestUHD`로 켜고 끔. 서버가 Prime 계정을 요구해 효과 없었음 (intent/261125 결정 DC12) |
+| `App/Resources/center-controls.js` | 재생 화면 가운데의 큰 컨트롤 층. 사이트 버튼을 대신 누른다 (intent/261125-cinema-center-controls) |
+| `App/Resources/page-events.js` | 페이지의 모든 동작(클릭·경로·console·영상·DRM·전체화면 …)을 앱에 보고. 플레이어 구조·숨김 관찰(`player-outline`·`player-visible`) |
 | `scripts/device-run.sh`, `device-pull.sh` | 실기기 설치·실행·실시간 로그 / 기기 로그·스크린숏 가져오기 |
-| `App/Resources/mac-disguise.js` | 문서 시작 시 모든 프레임에서 터치 표시를 숨기고 Mac처럼 보이게 하는 스크립트 |
 | `Tests/CoupangPlayVPTests/` | swift-testing 단위 테스트(앱 호스트). `SiteE2ETests`는 `CPVP_E2E=1`일 때만 |
 | `Config/Base.xcconfig` | 공통 설정. `Local.xcconfig`를 `#include?`로 읽어 Team ID·번들 ID 접두어를 덮어쓴다 |
 | `Config/Local.xcconfig.example` | 소스를 받은 사람이 복사해 쓰는 예시. 실제 `Local.xcconfig`는 git-ignore |

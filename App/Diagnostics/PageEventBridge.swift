@@ -18,7 +18,8 @@ final class PageEventBridge: NSObject, WKScriptMessageHandler {
         let rest = (try? JSONSerialization.data(withJSONObject: body, options: [.sortedKeys, .withoutEscapingSlashes]))
             .flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
         let host = message.frameInfo.securityOrigin.host
-        let category: EventLog.Category = kind == "media" || kind == "drm" || kind == "fullscreen" ? .media : .page
+        let category: EventLog.Category = kind == "media" || kind == "drm" || kind == "fullscreen" || kind.hasPrefix("player-")
+            ? .media : .page
         let location = frame == "main" ? "" : " @\(host) \(href)"
         let line = "\(frame) \(kind) \(rest)\(location)"
         EventLog.shared.log(category, line)

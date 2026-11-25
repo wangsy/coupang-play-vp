@@ -17,4 +17,5 @@ if [ "$BUILD" = 1 ]; then
   echo "installed $BUNDLE_ID on $UDID" >&2
 fi
 
-exec xcrun devicectl device process launch --device "$UDID" --terminate-existing --console "$BUNDLE_ID" "$@"
+# "--" so app arguments like -startURL go to the app; without it devicectl reads them as its own options (-t …).
+exec xcrun devicectl device process launch --device "$UDID" --terminate-existing --console "$BUNDLE_ID" -- "$@"
