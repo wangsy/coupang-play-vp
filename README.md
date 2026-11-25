@@ -1,6 +1,6 @@
 # 쿠팡플레이 VP
 
-Apple Vision Pro에서 쿠팡플레이 웹(https://www.coupangplay.com/)을 보기 위한 비공식 visionOS 앱입니다.
+Apple Vision Pro에서 [쿠팡플레이 웹](https://www.coupangplay.com/)을 보기 위한 비공식 visionOS 앱입니다.
 쿠팡과 관계없는 개인 프로젝트입니다. 앱은 배포하지 않습니다. 필요한 분은 소스를 받아 직접 빌드해 설치하세요.
 
 > 개발 중입니다. 진행 상황은 `intent/` 문서를 보세요.
